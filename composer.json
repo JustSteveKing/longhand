@@ -20,6 +20,7 @@
     "require-dev": {
         "fakerphp/faker": "^1.24",
         "larastan/larastan": "^3.9",
+        "laravel/boost": "^2.2",
         "laravel/pail": "^1.2.5",
         "laravel/pao": "^1.0.6",
         "laravel/pint": "^1.27",
@@ -48,8 +49,8 @@
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
             "@php artisan key:generate",
             "@php artisan migrate --force",
-            "npm install",
-            "npm run build"
+            "bun install",
+            "bun run build"
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
@@ -63,8 +64,8 @@
         ],
         "ci:check": [
             "Composer\\Config::disableProcessTimeout",
-            "npm run check",
-            "npm run types:check",
+            "bun run check",
+            "bun run types:check",
             "@test"
         ],
         "types:check": [
@@ -99,8 +100,7 @@
         "laravel": {
             "dont-discover": [],
             "installer": {
-                "post-create-project": [
-                ]
+                "post-create-project": []
             }
         }
     },
