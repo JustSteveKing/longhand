@@ -51,6 +51,19 @@ final class Member extends Model
     /** @var list<string> */
     protected $guarded = [];
 
+    /**
+     * The database's defaults, so a new model has them before it is reloaded.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'scopes' => '[]',
+        'requires_approval_for' => '[]',
+        'space_ids' => '[]',
+        'assistant' => false,
+        'spaces_follow_principal' => false,
+    ];
+
     public static function idPrefix(): string
     {
         return 'mem';

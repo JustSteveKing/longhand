@@ -80,3 +80,10 @@ arch('Identity depends on no other context')
         'Longhand\Search',
         'Longhand\Integration',
     ]);
+
+arch('API controllers are final, readonly and invokable (RFC 0013)')
+    ->expect('App\Http\Api\V1')
+    ->classes()
+    ->toBeFinal()
+    ->toBeReadonly()
+    ->toBeInvokable();

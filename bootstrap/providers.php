@@ -1,5 +1,6 @@
 <?php
 
+use App\Providers\ApiServiceProvider;
 use App\Providers\AppServiceProvider;
 use App\Providers\FortifyServiceProvider;
 use App\Providers\IdentityServiceProvider;
@@ -10,4 +11,5 @@ return [
     FortifyServiceProvider::class,
     SharedServiceProvider::class,
     IdentityServiceProvider::class,
+    ApiServiceProvider::class,
 ];

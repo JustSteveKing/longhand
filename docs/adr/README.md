@@ -75,3 +75,4 @@ Every ADR, in order, with its status. See [the process](../README.md).
 | [0069](0069-development-runs-in-sail.md) | Development runs in Sail, on the same PostgreSQL and a Mercure hub, with database queues in v1 | Superseded by ADR 0071 |
 | [0070](0070-models-go-through-the-laravel-ai-sdk.md) | Briefs and embeddings go through the Laravel AI SDK, with Anthropic for briefs and Voyage AI for embeddings | Accepted |
 | [0071](0071-octane-on-frankenphp-with-its-built-in-hub.md) | The application runs on Octane with FrankenPHP, whose built-in Mercure hub serves the stream, in development as in production | Accepted |
+| [0072](0072-the-api-renders-json-api-with-its-own-layer.md) | The REST API renders JSON:API with a small layer of its own, not Laravel's JsonApiResource | Accepted |

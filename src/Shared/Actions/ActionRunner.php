@@ -77,6 +77,41 @@ final readonly class ActionRunner
     }
 
     /**
+     * Runs the checks of run() without taking the action, logging and
+     * throwing a refusal as run() would. For a surface that applies several
+     * actions in one transaction: precheck each first, outside it, so a
+     * refusal is still recorded when the outer transaction rolls back.
+     *
+     * @param  class-string  $actionClass
+     */
+    public function precheck(Actor $actor, string $actionClass, object $payload): void
+    {
+        $definition = $this->definitionOf($actionClass);
+
+        try {
+            $authorisation = $this->authoriser->authorise($actor, $definition, $payload);
+
+            if (! $authorisation->allowed) {
+                throw new ActionRefused($definition, $authorisation->reason ?? 'This action is not allowed.', $authorisation->code ?? 'insufficient-scope');
+            }
+
+            $action = $this->container->make($actionClass);
+
+            if ($action instanceof Guarded) {
+                $guard = $action->guard($this->authorise($actor, $definition), $payload);
+
+                if (! $guard->allowed) {
+                    throw new ActionRefused($definition, $guard->reason ?? 'This action is not allowed.', $guard->code ?? 'insufficient-scope');
+                }
+            }
+        } catch (ActionRefused $refusal) {
+            $this->log->refused($actor, $definition, $payload, $refusal->getMessage());
+
+            throw $refusal;
+        }
+    }
+
+    /**
      * @param  class-string  $actionClass
      */
     private function definitionOf(string $actionClass): Action

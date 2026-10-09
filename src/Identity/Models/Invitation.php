@@ -39,6 +39,9 @@ final class Invitation extends Model
     /** @var list<string> */
     protected $hidden = ['token_hash'];
 
+    /** @var array<string, mixed> */
+    protected $attributes = ['space_ids' => '[]'];
+
     public static function idPrefix(): string
     {
         return 'inv';

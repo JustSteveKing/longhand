@@ -71,6 +71,21 @@ function accountActor(User $account): Actor
     return new Actor(memberId: null, surface: Surface::Web, accountId: $account->id);
 }
 
+/**
+ * Headers for a JSON:API request as a member.
+ *
+ * @param  list<string>|null  $scopes
+ * @return array<string, string>
+ */
+function asMember(Member $member, ?array $scopes = null): array
+{
+    return [
+        'Authorization' => 'Bearer test:'.$member->id.($scopes === null ? '' : ':'.implode(',', $scopes)),
+        'Accept' => 'application/vnd.api+json',
+        'Content-Type' => 'application/vnd.api+json',
+    ];
+}
+
 function runAction(Actor $actor, string $action, object $payload): mixed
 {
     return app(ActionRunner::class)->run($actor, $action, $payload);
