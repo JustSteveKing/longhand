@@ -8,7 +8,9 @@ namespace Longhand\Shared\Actors;
  * Who is asking, before anything has been checked.
  *
  * Each surface builds one from its own credentials: the session for the
- * web app, the token for REST and MCP, nothing for scheduled work.
+ * web app, the token for REST and MCP, nothing for scheduled work. An
+ * account with no member yet, during onboarding, has an accountId and no
+ * memberId (RFC 0003).
  */
 final readonly class Actor
 {
@@ -20,6 +22,7 @@ final readonly class Actor
         public Surface $surface,
         public array $scopes = [],
         public ?string $onBehalfOf = null,
+        public ?int $accountId = null,
     ) {}
 
     public static function system(): self

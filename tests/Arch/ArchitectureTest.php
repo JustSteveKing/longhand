@@ -39,7 +39,8 @@ arch('no debugging calls are left behind')
  * Octane keeps the application in memory between requests (ADR 0071), so
  * anything held in a static property leaks from one request into the
  * next. State belongs in scoped container bindings, which Octane resets
- * on every request.
+ * on every request. Statics inherited from the framework, such as
+ * Eloquent's, are the framework's to manage.
  */
 it('keeps no state in static properties in the domain', function (): void {
     $offenders = [];
@@ -56,9 +57,25 @@ it('keeps no state in static properties in the domain', function (): void {
         }
 
         foreach ((new ReflectionClass($class))->getProperties(ReflectionProperty::IS_STATIC) as $property) {
-            $offenders[] = "{$class}::\${$property->getName()}";
+            // Only what our own code declares; the framework's base classes
+            // manage their own statics for Octane.
+            if (str_starts_with($property->getDeclaringClass()->getName(), 'Longhand\\')) {
+                $offenders[] = "{$class}::\${$property->getName()}";
+            }
         }
     }
 
     expect($offenders)->toBe([]);
 });
+
+arch('Identity depends on no other context')
+    ->expect('Longhand\Identity')
+    ->not->toUse([
+        'Longhand\Conversations',
+        'Longhand\Commitments',
+        'Longhand\Attention',
+        'Longhand\Briefs',
+        'Longhand\CheckIns',
+        'Longhand\Search',
+        'Longhand\Integration',
+    ]);
