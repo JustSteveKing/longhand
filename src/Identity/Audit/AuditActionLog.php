@@ -10,6 +10,7 @@ use Longhand\Identity\Models\Member;
 use Longhand\Identity\Models\Workspace;
 use Longhand\Shared\Actions\Action;
 use Longhand\Shared\Actions\ActionLog;
+use Longhand\Shared\Actions\HasSubject;
 use Longhand\Shared\Actors\Actor;
 
 /**
@@ -19,7 +20,11 @@ final readonly class AuditActionLog implements ActionLog
 {
     public function allowed(Actor $actor, Action $action, object $payload, mixed $result, array $events): void
     {
-        $subject = $result instanceof Model ? $result : null;
+        $subject = match (true) {
+            $result instanceof Model => $result,
+            $result instanceof HasSubject => $result->subject(),
+            default => null,
+        };
 
         $this->write($actor, $action, AuditOutcome::Allowed, [
             'workspace_id' => $this->workspaceOf($actor, $subject),
@@ -59,7 +64,7 @@ final readonly class AuditActionLog implements ActionLog
         return match (true) {
             $actor->memberId !== null => Member::query()->whereKey($actor->memberId)->value('workspace_id'),
             $subject instanceof Workspace => $subject->id,
-            $subject instanceof Member => $subject->workspace_id,
+            $subject !== null && is_string($subject->getAttribute('workspace_id')) => $subject->getAttribute('workspace_id'),
             default => null,
         };
     }

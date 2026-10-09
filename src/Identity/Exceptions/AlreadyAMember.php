@@ -6,11 +6,11 @@ namespace Longhand\Identity\Exceptions;
 
 use Longhand\Shared\Errors\DomainError;
 
-final class HandleTaken extends DomainError
+final class AlreadyAMember extends DomainError
 {
-    public function __construct(public readonly string $handle)
+    public function __construct()
     {
-        parent::__construct("The handle \"{$handle}\" is already taken.");
+        parent::__construct('That person is already a member of this workspace.');
     }
 
     public function errorCode(): string

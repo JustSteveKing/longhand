@@ -1,6 +1,13 @@
 <?php
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Longhand\Identity\Authorisation\RoleScopes;
+use Longhand\Identity\Enums\Role;
+use Longhand\Identity\Models\Member;
+use Longhand\Shared\Actions\ActionRunner;
+use Longhand\Shared\Actors\Actor;
+use Longhand\Shared\Actors\Surface;
 use Tests\TestCase;
 
 /*
@@ -29,10 +36,6 @@ pest()->extend(TestCase::class)
 |
 */
 
-expect()->extend('toBeOne', function () {
-    return $this->toBe(1);
-});
-
 /*
 |--------------------------------------------------------------------------
 | Functions
@@ -44,7 +47,31 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * The actor a member's own session or token would give, carrying every
+ * scope their role allows unless told otherwise.
+ *
+ * @param  list<string>|null  $scopes
+ */
+function memberActor(Member $member, ?array $scopes = null, Surface $surface = Surface::Rest): Actor
 {
-    // ..
+    return new Actor(
+        memberId: $member->id,
+        surface: $surface,
+        scopes: $scopes ?? RoleScopes::for($member->role ?? Role::Owner),
+        accountId: $member->account_id,
+    );
+}
+
+/**
+ * An account in the web app before it is a member of a workspace.
+ */
+function accountActor(User $account): Actor
+{
+    return new Actor(memberId: null, surface: Surface::Web, accountId: $account->id);
+}
+
+function runAction(Actor $actor, string $action, object $payload): mixed
+{
+    return app(ActionRunner::class)->run($actor, $action, $payload);
 }

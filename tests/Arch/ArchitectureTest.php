@@ -26,10 +26,11 @@ arch('domain code is strict')
     ->expect('Longhand')
     ->toUseStrictTypes();
 
-arch('the shared kernel is final')
+arch('the shared kernel is final, apart from the base for domain errors')
     ->expect('Longhand\Shared')
     ->classes()
-    ->toBeFinal();
+    ->toBeFinal()
+    ->ignoring('Longhand\Shared\Errors\DomainError');
 
 arch('no debugging calls are left behind')
     ->expect(['dd', 'dump', 'ray', 'var_dump'])
