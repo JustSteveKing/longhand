@@ -1,5 +1,6 @@
 <?php
 
+use App\Auth\TokenHolder;
 use App\Models\User;
 
 return [
@@ -42,6 +43,18 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // OAuth access tokens belong to members, never to accounts (ADR 0015).
+        'api' => [
+            'driver' => 'passport',
+            'provider' => 'members',
+        ],
+
+        // The signed-in account's member in the workspace it is using: who an
+        // OAuth authorisation approved in the web app is granted to.
+        'workspace' => [
+            'driver' => 'workspace-member',
+        ],
     ],
 
     /*
@@ -65,6 +78,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
+        ],
+
+        'members' => [
+            'driver' => 'eloquent',
+            'model' => TokenHolder::class,
         ],
 
         // 'users' => [

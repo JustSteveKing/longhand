@@ -39,7 +39,7 @@ function createAgent(Member $by, array $scopes = ['threads:read', 'posts:write:d
         requiresApprovalFor: $rules,
         description: 'Routes new support threads',
         ownerId: $ownerId,
-    ));
+    ))->agent;
 }
 
 #[Action('post.publish', scope: 'posts:write')]

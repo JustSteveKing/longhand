@@ -10,6 +10,7 @@ use App\Http\Api\JsonApi\QueryParameters;
 use App\Http\Api\JsonApi\RequestDocument;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Longhand\Identity\Credentials\IssuedCredentials;
 use Longhand\Identity\Features\CreateAgent\CreateAgent;
 use Longhand\Identity\Features\CreateAgent\CreateAgentPayload;
 use Longhand\Identity\Handle;
@@ -17,7 +18,7 @@ use Longhand\Shared\Actions\ActionRunner;
 
 /**
  * POST /v1/members creates an agent; people join by invitation, never
- * through the API (RFC 0003). Its client credentials arrive with OAuth.
+ * through the API (RFC 0003). Its client credentials come back once.
  */
 final readonly class CreateAgentController
 {
@@ -43,7 +44,8 @@ final readonly class CreateAgentController
             'timezone' => ['sometimes', 'timezone:all'],
         ]);
 
-        $agent = $this->runner->run(ApiActor::of($request), CreateAgent::class, new CreateAgentPayload(
+        /** @var IssuedCredentials $issued */
+        $issued = $this->runner->run(ApiActor::of($request), CreateAgent::class, new CreateAgentPayload(
             displayName: $attributes['display_name'],
             handle: Handle::from($attributes['handle']),
             scopes: array_values($attributes['scopes'] ?? []),
@@ -55,8 +57,14 @@ final readonly class CreateAgentController
             timezone: $attributes['timezone'] ?? null,
         ));
 
-        return $this->document->resource($request, $agent, $parameters, 201, [
-            'Location' => url('/v1/members/'.$agent->id),
+        return $this->document->resource($request, $issued->agent, $parameters, 201, [
+            'Location' => url('/v1/members/'.$issued->agent->id),
+        ], meta: [
+            // Shown once; Longhand keeps only a hash of the secret (RFC 0003).
+            'client_credentials' => [
+                'client_id' => $issued->credentials->clientId,
+                'client_secret' => $issued->credentials->clientSecret,
+            ],
         ]);
     }
 }

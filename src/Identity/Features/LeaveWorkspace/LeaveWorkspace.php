@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Longhand\Identity\Features\LeaveWorkspace;
 
 use Longhand\Identity\ActingMember;
+use Longhand\Identity\Credentials\AccessTokens;
 use Longhand\Identity\Features\DeactivateMember\EndsMemberships;
 use Longhand\Identity\Models\Member;
 use Longhand\Shared\Actions\Action;
@@ -21,14 +22,17 @@ final readonly class LeaveWorkspace
 {
     use EndsMemberships;
 
-    public function __construct(private RecordedEvents $events) {}
+    public function __construct(
+        private RecordedEvents $events,
+        private AccessTokens $tokens,
+    ) {}
 
     public function handle(AuthorisedActor $actor, NoInput $payload): Member
     {
         $member = ActingMember::of($actor);
 
         $this->ensureNotLastOwner($member);
-        $this->end($member, 'left', $this->events);
+        $this->end($member, 'left', $this->events, $this->tokens);
 
         return $member;
     }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Longhand\Identity\Features\DeactivateMember;
 
 use Longhand\Identity\ActingMember;
+use Longhand\Identity\Credentials\AccessTokens;
 use Longhand\Identity\Enums\MemberKind;
 use Longhand\Identity\Enums\MemberStatus;
 use Longhand\Identity\Enums\Role;
@@ -28,7 +29,10 @@ final readonly class DeactivateMember implements Guarded
 {
     use EndsMemberships;
 
-    public function __construct(private RecordedEvents $events) {}
+    public function __construct(
+        private RecordedEvents $events,
+        private AccessTokens $tokens,
+    ) {}
 
     public function guard(AuthorisedActor $actor, object $payload): Authorisation
     {
@@ -58,7 +62,7 @@ final readonly class DeactivateMember implements Guarded
         }
 
         $this->ensureNotLastOwner($member);
-        $this->end($member, 'deactivated', $this->events);
+        $this->end($member, 'deactivated', $this->events, $this->tokens);
 
         return $member;
     }

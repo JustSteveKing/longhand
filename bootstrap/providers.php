@@ -2,6 +2,7 @@
 
 use App\Providers\ApiServiceProvider;
 use App\Providers\AppServiceProvider;
+use App\Providers\AuthServiceProvider;
 use App\Providers\FortifyServiceProvider;
 use App\Providers\IdentityServiceProvider;
 use App\Providers\SharedServiceProvider;
@@ -12,4 +13,5 @@ return [
     SharedServiceProvider::class,
     IdentityServiceProvider::class,
     ApiServiceProvider::class,
+    AuthServiceProvider::class,
 ];

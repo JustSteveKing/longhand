@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Longhand\Identity\Features\DeleteAccount;
 
 use Longhand\Identity\ActingMember;
+use Longhand\Identity\Credentials\AccessTokens;
 use Longhand\Identity\Enums\MemberStatus;
 use Longhand\Identity\Enums\Role;
 use Longhand\Identity\Exceptions\LastOwner;
@@ -21,14 +22,17 @@ use Longhand\Shared\Events\RecordedEvents;
  * workspace. Every membership ends, their agents are suspended, and the
  * email address and password are removed at once, so the address can
  * sign up again with no link to the old account. It cannot be undone.
- * Ending sessions and revoking tokens happens where those live.
+ * Its tokens are revoked here; ending web sessions is the web app's.
  */
 #[Action('account.delete', humansOnly: true, approvable: false, requiresMember: false)]
 final readonly class DeleteAccount
 {
     use EndsMemberships;
 
-    public function __construct(private RecordedEvents $events) {}
+    public function __construct(
+        private RecordedEvents $events,
+        private AccessTokens $tokens,
+    ) {}
 
     public function handle(AuthorisedActor $actor, NoInput $payload): int
     {
@@ -50,7 +54,7 @@ final readonly class DeleteAccount
         }
 
         foreach ($memberships as $member) {
-            $this->end($member, 'account_deleted', $this->events);
+            $this->end($member, 'account_deleted', $this->events, $this->tokens);
         }
 
         $account->delete();

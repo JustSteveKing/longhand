@@ -27,6 +27,7 @@ Route::middleware([
     Route::post('members', Identity\CreateAgentController::class);
     Route::get('members/{member}', Identity\ShowMember::class);
     Route::patch('members/{member}', Identity\UpdateMemberController::class);
+    Route::post('members/{member}/credentials', Identity\RotateCredentialsController::class);
 
     Route::get('invitations', Identity\ListInvitations::class);
     Route::post('invitations', Identity\CreateInvitationController::class);

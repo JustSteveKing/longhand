@@ -13,6 +13,10 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
 
+        if (! file_exists(storage_path('oauth-private.key'))) {
+            $this->artisan('passport:keys');
+        }
+
         $this->app->bind(ApiActorResolver::class, FakeTokens::class);
     }
 

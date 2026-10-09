@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use App\Http\Api\ApiActorResolver;
 use App\Http\Api\JsonApi\Serializers;
-use App\Http\Api\NoTokensYet;
 use App\Http\Api\Serializers\AuditEventSerializer;
 use App\Http\Api\Serializers\InvitationSerializer;
 use App\Http\Api\Serializers\MemberSerializer;
@@ -18,15 +16,13 @@ use Longhand\Identity\Models\Member;
 use Longhand\Identity\Models\Workspace;
 
 /**
- * The REST surface: which serializer renders which model, and how a
- * request becomes an actor. Tokens arrive with Passport (ADR 0060).
+ * The REST surface: which serializer renders which model. How a request
+ * becomes an actor is the AuthServiceProvider's.
  */
 final class ApiServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->bind(ApiActorResolver::class, NoTokensYet::class);
-
         $this->app->singleton(Serializers::class, fn ($app): Serializers => new Serializers($app, [
             Member::class => MemberSerializer::class,
             Workspace::class => WorkspaceSerializer::class,

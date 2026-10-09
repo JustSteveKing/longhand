@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Longhand\Identity\Features\CreateAgent;
 
 use Longhand\Identity\ActingMember;
+use Longhand\Identity\Credentials\AgentCredentials;
+use Longhand\Identity\Credentials\IssuedCredentials;
 use Longhand\Identity\Enums\MemberKind;
 use Longhand\Identity\Enums\MemberStatus;
 use Longhand\Identity\Events\AgentCreated;
@@ -26,7 +28,10 @@ final readonly class CreateAgent implements Guarded
 {
     use GovernsAgents;
 
-    public function __construct(private RecordedEvents $events) {}
+    public function __construct(
+        private RecordedEvents $events,
+        private AgentCredentials $credentials,
+    ) {}
 
     public function guard(AuthorisedActor $actor, object $payload): Authorisation
     {
@@ -39,7 +44,7 @@ final readonly class CreateAgent implements Guarded
         };
     }
 
-    public function handle(AuthorisedActor $actor, CreateAgentPayload $payload): Member
+    public function handle(AuthorisedActor $actor, CreateAgentPayload $payload): IssuedCredentials
     {
         $creator = ActingMember::of($actor);
         $owner = $payload->ownerId === null || $payload->ownerId === $creator->id
@@ -74,6 +79,7 @@ final readonly class CreateAgent implements Guarded
 
         $this->events->record(new AgentCreated($agent->workspace_id, $agent->id, $owner->id, $creator->id));
 
-        return $agent;
+        // Client credentials are issued with the agent and shown once (RFC 0003).
+        return new IssuedCredentials($agent, $this->credentials->issue($agent));
     }
 }

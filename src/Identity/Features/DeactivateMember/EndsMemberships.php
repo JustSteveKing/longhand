@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Longhand\Identity\Features\DeactivateMember;
 
+use Longhand\Identity\Credentials\AccessTokens;
 use Longhand\Identity\Enums\MemberKind;
 use Longhand\Identity\Enums\MemberStatus;
 use Longhand\Identity\Enums\Role;
@@ -15,8 +16,9 @@ use Longhand\Shared\Events\RecordedEvents;
 
 /**
  * Deactivating, leaving and deleting an account all end a membership the
- * same way: never the last owner, and the member's agents are suspended
- * until someone transfers or deactivates them (RFC 0003).
+ * same way: never the last owner, the member's agents are suspended until
+ * someone transfers or deactivates them, and all their tokens are revoked
+ * (RFC 0003).
  */
 trait EndsMemberships
 {
@@ -37,7 +39,7 @@ trait EndsMemberships
             ->exists();
     }
 
-    private function end(Member $member, string $reason, RecordedEvents $events): void
+    private function end(Member $member, string $reason, RecordedEvents $events, AccessTokens $tokens): void
     {
         $member->update(['status' => MemberStatus::Deactivated]);
 
@@ -51,6 +53,9 @@ trait EndsMemberships
             $agent->update(['status' => MemberStatus::Suspended]);
             $events->record(new AgentSuspended($agent->workspace_id, $agent->id, 'owner_deactivated'));
         }
+
+        // Their tokens, and their agents', stop working at once.
+        $tokens->revokeFor([$member->id, ...array_values($agents->map(fn (Member $agent): string => $agent->id)->all())]);
 
         $events->record(new MemberDeactivated(
             $member->workspace_id,
