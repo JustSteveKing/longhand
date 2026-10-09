@@ -14,6 +14,7 @@ final class ActionRefused extends RuntimeException
     public function __construct(
         public readonly Action $action,
         string $reason,
+        public readonly string $errorCode = 'insufficient-scope',
     ) {
         parent::__construct($reason);
     }

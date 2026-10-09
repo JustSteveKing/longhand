@@ -13,11 +13,12 @@ final readonly class Authorisation
         public bool $allowed,
         public bool $needsApproval,
         public ?string $reason,
+        public ?string $code,
     ) {}
 
     public static function allow(): self
     {
-        return new self(allowed: true, needsApproval: false, reason: null);
+        return new self(allowed: true, needsApproval: false, reason: null, code: null);
     }
 
     /**
@@ -25,11 +26,14 @@ final readonly class Authorisation
      */
     public static function approvalRequired(): self
     {
-        return new self(allowed: true, needsApproval: true, reason: null);
+        return new self(allowed: true, needsApproval: true, reason: null, code: null);
     }
 
-    public static function refuse(string $reason): self
+    /**
+     * @param  string  $code  The error code a surface renders it as (RFC 0002), such as `insufficient-scope`.
+     */
+    public static function refuse(string $reason, string $code = 'insufficient-scope'): self
     {
-        return new self(allowed: false, needsApproval: false, reason: $reason);
+        return new self(allowed: false, needsApproval: false, reason: $reason, code: $code);
     }
 }

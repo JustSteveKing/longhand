@@ -21,7 +21,7 @@ use Longhand\Shared\Events\RecordedEvents;
  * A verified account creates a workspace and becomes its first member,
  * as its owner (RFC 0003). Web app only.
  */
-#[Action('workspace.create', approvable: false)]
+#[Action('workspace.create', approvable: false, humansOnly: true, requiresMember: false)]
 final readonly class CreateWorkspace
 {
     public function __construct(private RecordedEvents $events) {}

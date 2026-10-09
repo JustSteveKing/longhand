@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\User;
+use Longhand\Identity\Audit\AuditEvent;
 use Longhand\Identity\Enums\MemberKind;
 use Longhand\Identity\Enums\MemberStatus;
 use Longhand\Identity\Enums\Role;
@@ -73,6 +74,17 @@ it('records that the workspace was created and its owner joined', function (): v
     expect($events)->toHaveCount(2)
         ->and($events[0])->toEqual(new WorkspaceCreated($owner->workspace_id, $owner->id))
         ->and($events[1])->toEqual(new MemberJoined($owner->workspace_id, $owner->id));
+});
+
+it('audits the creation against the new workspace', function (): void {
+    $this->app->forgetInstance(ActionLog::class);
+    $this->app->forgetScopedInstances();
+    $owner = createWorkspace(User::factory()->create());
+
+    expect(AuditEvent::query()->sole())
+        ->action->toBe('workspace.create')
+        ->workspace_id->toBe($owner->workspace_id)
+        ->subject_id->toBe($owner->id);
 });
 
 it('refuses a handle another workspace has, and creates nothing', function (): void {

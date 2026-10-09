@@ -16,11 +16,11 @@ use Longhand\Shared\Events\DomainEvent;
 interface ActionLog
 {
     /**
-     * Inside the Action's transaction, after it has run.
+     * Inside the Action's transaction, after it has run, with what it returned.
      *
      * @param  list<DomainEvent>  $events
      */
-    public function allowed(Actor $actor, Action $action, object $payload, array $events): void;
+    public function allowed(Actor $actor, Action $action, object $payload, mixed $result, array $events): void;
 
     /**
      * After the transaction has rolled back, on its own.

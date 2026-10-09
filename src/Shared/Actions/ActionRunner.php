@@ -42,11 +42,19 @@ final readonly class ActionRunner
                 $authorisation = $this->authoriser->authorise($actor, $definition, $payload);
 
                 if (! $authorisation->allowed) {
-                    throw new ActionRefused($definition, $authorisation->reason ?? 'This action is not allowed.');
+                    throw new ActionRefused($definition, $authorisation->reason ?? 'This action is not allowed.', $authorisation->code ?? 'insufficient-scope');
                 }
 
                 $action = $this->container->make($actionClass);
                 $authorised = $this->authorise($actor, $definition);
+
+                if ($action instanceof Guarded) {
+                    $guard = $action->guard($authorised, $payload);
+
+                    if (! $guard->allowed) {
+                        throw new ActionRefused($definition, $guard->reason ?? 'This action is not allowed.', $guard->code ?? 'insufficient-scope');
+                    }
+                }
 
                 $result = match (true) {
                     ! $authorisation->needsApproval => $action->handle($authorised, $payload),
@@ -54,7 +62,7 @@ final readonly class ActionRunner
                     default => throw new ActionRefused($definition, "{$definition->name} needs approval and has no draft path."),
                 };
 
-                $this->log->allowed($actor, $definition, $payload, $this->events->release());
+                $this->log->allowed($actor, $definition, $payload, $result, $this->events->release());
 
                 return $result;
             });

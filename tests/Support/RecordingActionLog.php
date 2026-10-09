@@ -21,7 +21,7 @@ final class RecordingActionLog implements ActionLog
     /** @var list<array{action: string, reason: string}> */
     public array $refused = [];
 
-    public function allowed(Actor $actor, Action $action, object $payload, array $events): void
+    public function allowed(Actor $actor, Action $action, object $payload, mixed $result, array $events): void
     {
         $this->allowed[] = ['action' => $action->name, 'events' => $events];
     }

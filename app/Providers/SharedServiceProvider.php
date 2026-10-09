@@ -17,9 +17,8 @@ use Longhand\Shared\Events\RecordedEvents;
 /**
  * Wires the shared kernel: the Action runner and what it depends on.
  *
- * The authoriser and the action log are placeholders until Identity
- * (the audit log, roles, agent rules) and Integration (the outbox) bind
- * their own.
+ * The scope-only authoriser and the null log are fallbacks; Identity's
+ * provider, registered after this one, binds the real ones.
  */
 final class SharedServiceProvider extends ServiceProvider
 {
