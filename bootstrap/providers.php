@@ -2,8 +2,10 @@
 
 use App\Providers\AppServiceProvider;
 use App\Providers\FortifyServiceProvider;
+use App\Providers\SharedServiceProvider;
 
 return [
     AppServiceProvider::class,
     FortifyServiceProvider::class,
+    SharedServiceProvider::class,
 ];
