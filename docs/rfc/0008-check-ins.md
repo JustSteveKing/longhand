@@ -3,6 +3,7 @@
 - **Status:** Accepted
 - **Created:** 2026-10-09
 - **Depends on:** RFC 0004, RFC 0006, RFC 0007, ADR 0032, ADR 0040
+- **Amended by:** API contract review, 2026-10-09
 
 ## Summary
 
@@ -157,6 +158,9 @@ Each scheduled day produces one run, a `check_in_runs` resource:
 }
 ```
 
+A run's `status` is `open` from when it opens until its last window
+ends, then `closed`.
+
 **Opening.** A run opens at the earliest moment anyone is asked: with
 `respondent` timing, the earliest of the respondents' local scheduled
 times that day. Opening it:
@@ -243,8 +247,30 @@ the answers into the run's thread as the respondent:
   check-in's owner. It is in someone's inbox the moment it is posted.
   The respondent marks it answered when it is resolved (ADR 0027).
 
-The response records which posts it created, in its `posts` relationship.
-Changing an answer afterwards is editing those posts (RFC 0004).
+The stored response is a `check_in_responses` resource:
+
+```json
+{
+  "type": "check_in_responses",
+  "id": "rsp_01JAE9...",
+  "attributes": {
+    "answers": [{ "key": "done", "text": "Shipped the retry backoff for webhooks." }],
+    "nothing_to_report": false,
+    "late": false,
+    "created_at": "2026-10-13T08:41:00Z"
+  },
+  "relationships": {
+    "run": { "data": { "type": "check_in_runs", "id": "run_01JAE5..." } },
+    "respondent": { "data": { "type": "members", "id": "mem_01JA7Q..." } },
+    "posts": { "data": [{ "type": "posts", "id": "pst_01JAEA..." }] }
+  }
+}
+```
+
+`posts` lists the update and blocker posts the response created, and is
+empty for nothing to report; posts the caller cannot see yet are left
+out (ADR 0043). Changing an answer afterwards is editing those posts
+(RFC 0004).
 
 **Nothing to report.** A person can answer with
 `"nothing_to_report": true` and no answers. That posts nothing, closes

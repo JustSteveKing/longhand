@@ -1040,7 +1040,7 @@ MCP has no way to change scopes, create agents, manage webhooks, change availabi
 
 ## 14. Endpoint reference
 
-> To be replaced by the OpenAPI document, `api/openapi.yaml`, written from the accepted RFCs. Until then, each RFC's Endpoints section is the reference.
+> Replaced by the OpenAPI document, [`api/openapi.yaml`](../api/openapi.yaml), written from the accepted RFCs.
 
 | Method | Path | Purpose |
 | --- | --- | --- |

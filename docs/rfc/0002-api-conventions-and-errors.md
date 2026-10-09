@@ -3,7 +3,8 @@
 - **Status:** Accepted
 - **Created:** 2026-10-08
 - **Depends on:** RFC 0001, ADR 0002
-- **Amended by:** RFC 0003, RFC 0004, RFC 0005, RFC 0006, RFC 0007, RFC 0008
+- **Amended by:** RFC 0003, RFC 0004, RFC 0005, RFC 0006, RFC 0007, RFC 0008,
+  API contract review, 2026-10-09
 
 ## Summary
 
@@ -151,8 +152,11 @@ A resource is returned as a JSON:API resource object:
 - **Values that are not resources,** such as a post's `body`, a thread's
   `counts` or a member's public availability summary, stay as structured
   attributes.
-- Every resource object has a `links.self`. Relationship `links` are not
-  provided in v1.
+- Every resource object has a `links.self`. A relationship carries
+  `data`; a to-many relationship too large to embed (a space's
+  memberships, a thread's posts, a brief's items) carries only
+  `links.related` instead, pointing at the collection that lists it.
+  Relationships have no `self` links in v1. (Amended by RFC 0004.)
 
 A collection's primary data is an array of resource objects. A document
 with no primary data, for example a deleted resource, is `204 No Content`.
@@ -212,6 +216,11 @@ with full linkage: every included resource is reachable from the primary
 data through relationships. Each resource type documents the paths it
 supports, and a path that is not supported, or `include` on an endpoint
 that supports none, is `400`.
+
+`include` is opt-in: nothing is included unless asked for, with one
+documented exception, search results, which always include each result's
+thread, because a post or decision without its thread has no context
+(RFC 0009).
 
 `include` never widens what the caller can see. A related resource the
 caller cannot see is left out of `included`, and its identifier is left

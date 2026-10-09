@@ -3,7 +3,8 @@
 - **Status:** Accepted
 - **Created:** 2026-10-09
 - **Depends on:** RFC 0002, RFC 0003, ADR 0011, ADR 0012, ADR 0013
-- **Amended by:** RFC 0005, RFC 0006, RFC 0007, RFC 0011
+- **Amended by:** RFC 0005, RFC 0006, RFC 0007, RFC 0011, API contract
+  review, 2026-10-09
 
 ## Summary
 
@@ -124,8 +125,9 @@ threads.
 
 **Direct spaces** have no name, no owner and no settings of their own;
 they use the workspace defaults. Their membership is fixed: the set of
-members is what identifies the space. Creating a direct space for a set
-that already has one returns that space with `200 OK` and its
+members is what identifies the space. A direct space is created with the
+set in its `members` relationship, the caller included. Creating a
+direct space for a set that already has one returns that space with `200 OK` and its
 `Location`, instead of `201`, so a client never has to search first. To
 add someone, start a new direct space with the larger set. Members
 cannot leave a direct space, because that would change which space it
@@ -174,7 +176,8 @@ creates and deletes:
   mentions reach their inbox, and it drops out of their default space
   list. Requests assigned to them and `incident` posts still arrive,
   because those are commitments rather than chatter. RFC 0006 applies
-  the rule. Nobody else can see that a member has muted a space.
+  the rule. Nobody else can see that a member has muted a space: `muted`
+  is `null` on anyone else's membership.
 - `muted` is the only attribute a membership has, so memberships carry
   an `ETag` and `PATCH` and `DELETE` take `If-Match`, like any other
   mutable resource (ADR 0011).
@@ -206,6 +209,7 @@ threads and closes their inbox items there. What they wrote stays.
     "owner": { "data": { "type": "members", "id": "mem_01JA7Q..." } },
     "participants": { "data": [{ "type": "members", "id": "mem_01JA7R..." }] },
     "waiting_on": { "data": null },
+    "proposed_by": { "data": null },
     "related_threads": { "data": [] },
     "decision": { "data": null },
     "summary": { "data": null },
@@ -541,7 +545,9 @@ Only the author edits a published post, as action `post.edit`, with a
   revision is kept and `edited_at` stays `null`.
 - Later edits keep the previous version as a `post_revisions` resource,
   listed at `GET /v1/posts/{post}/revisions`, and set `edited_at`, which
-  readers see as an edited marker.
+  readers see as an edited marker. A revision holds the `body` and
+  `links` as they were, `created_at` (when that version was replaced),
+  and a `post` relationship.
 - After publishing, intent can change between `fyi`, `question` and
   `update` only. Changing to or from `request` or `decision` is `409`
   `invalid-transition`, because those created other resources. Changing
@@ -551,8 +557,9 @@ Only the author edits a published post, as action `post.edit`, with a
 wrote it, or an admin, replaces the post with a tombstone: `status`
 becomes `deleted`, the body, links, files and reactions go, and the ID,
 author, thread and timestamps stay, so replies, citations in briefs and
-decisions still resolve. A deleted post is `200` with the tombstone,
-never `404`. A post that created a request or decision cannot be deleted
+decisions still resolve. What goes is `null` or empty rather than
+absent, since every attribute is always present (RFC 0002). A deleted
+post is `200` with the tombstone, never `404`. A post that created a request or decision cannot be deleted
 (`409` `invalid-transition`); cancel the request or supersede the
 decision instead.
 
@@ -578,11 +585,16 @@ A post has at most 10 attachments, `links` and `files` together (RFC
   content type and size, and returns an `uploads` resource with a
   15-minute `upload_url` that the client sends the bytes to directly
   (ADR 0014). The post then names the upload in `files`.
+- An upload's attributes are `name`, `content_type`, `size` (at most
+  100 MiB), `upload_url` and `created_at`; `upload_url` may be `null`
+  on later reads. Its `post` relationship names the post it is attached
+  to, once it is.
 - An upload belongs to the member who created it and can be attached to
   one post. Uploads not attached within 24 hours are removed.
 - Once attached, an upload is visible to whoever can see the post. Its
   `links.download` is a signed URL valid for 5 minutes, issued fresh on
   every read, and files are always served as downloads, never inline.
+  `links.download` may be `null` when there is nothing to download.
 
 ### Actions
 

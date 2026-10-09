@@ -3,7 +3,7 @@
 - **Status:** Accepted
 - **Created:** 2026-10-09
 - **Depends on:** RFC 0003, RFC 0004, ADR 0013, ADR 0017, ADR 0022
-- **Amended by:** RFC 0006
+- **Amended by:** RFC 0006, API contract review, 2026-10-09
 
 ## Summary
 
@@ -90,7 +90,8 @@ The spec's two resources are right. What needs settling:
 - **The assignee** is one member who can see the thread: a person or an
   agent. Assigning work to an agent is one of the things Longhand is for.
   The requester may assign themselves, which makes a visible commitment
-  ("I will have this done by Friday") rather than a private to-do.
+  ("I will have this done by Friday") rather than a private to-do. Every
+  request has an assignee: the relationship is never empty.
 - **`due_by`** must be in the future when it is set. `done_when` says what
   finished looks like, up to 500 characters, and is optional.
 - **Urgency** belongs to the post. A request has no `urgency` of its own,
@@ -239,7 +240,7 @@ reason.
 
 This replaces the spec's `history` attribute: the members are
 relationships, so they can be included, and an invisible member is left
-out per ADR 0012. Transitions are listed oldest first at
+out per ADR 0012: `by` or `assignee` is then `null`. Transitions are listed oldest first at
 `GET /v1/requests/{request}/transitions`, and are never edited.
 `assignee` is who held the request after the transition.
 
@@ -269,7 +270,7 @@ lists the person's requests.
   "attributes": {
     "status": "active",
     "summary": "Use SQS for the billing queue",
-    "rationale": "Redis persistence risk is not worth it for billing.",
+    "rationale": { "format": "markdown", "text": "Redis persistence risk is not worth it for billing." },
     "tags": ["infrastructure", "billing"],
     "decided_at": "2026-10-08T15:00:00Z",
     "created_at": "2026-10-08T15:00:00Z"
@@ -286,15 +287,17 @@ lists the person's requests.
 }
 ```
 
-- **`summary`** is one line, up to 200 characters. **`rationale`** is
-  Markdown, up to 10,000 characters, and optional, though a decision
-  without one is a poor record.
+- **`summary`** is one line, up to 200 characters. **`rationale`** is the
+  same Markdown object as a post's body (`format` and `text`), up to
+  10,000 characters, and optional, though a decision without one is a
+  poor record.
 - **`decided_by`** is one or more humans who can see the thread. It never
   includes an agent.
 - **`status`** is `draft`, `active` or `superseded`.
 - **`tags`** are lowercase words or hyphenated phrases, up to 10 per
   decision. They are the one thing about a decision that can change.
-- **`decided_at`** is when it was published.
+- **`decided_at`** is when it was published, and `null` while it is a
+  draft.
 
 The spec's `informed` list of spaces is dropped. A decision is visible
 only to people who can see its thread, so informing a space whose members

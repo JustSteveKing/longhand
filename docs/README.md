@@ -50,7 +50,9 @@ can be changed by a later RFC that needs it to change: a new field, a
 new setting, an entry in an index, a decision reversed in review. The
 change is made in the accepted RFC itself, so it stays the current truth,
 and its header gains an `Amended by: RFC NNNN` line naming every RFC that
-changed it. A reversed decision says so where it is written. Once code
+changed it. Writing the API contract can amend an accepted RFC the same
+way, where the contract needs a name, a shape or a rule the RFC left
+open; the header then says `API contract review, YYYY-MM-DD`. A reversed decision says so where it is written. Once code
 implements an RFC, it is frozen, and changing it takes a new RFC that
 supersedes it. ADRs are never amended this way; a changed decision is a
 new ADR.

@@ -3,7 +3,7 @@
 - **Status:** Accepted
 - **Created:** 2026-10-09
 - **Depends on:** RFC 0002, RFC 0004, RFC 0005, RFC 0008, ADR 0012, ADR 0025, ADR 0043
-- **Amended by:** RFC 0013
+- **Amended by:** RFC 0013, API contract review, 2026-10-09
 
 ## Summary
 
@@ -69,7 +69,8 @@ GET /v1/search?filter[q]="billing queue" -redis&filter[type]=posts,decisions&fil
 | `filter[space]`, `filter[thread]` | Limit to spaces or threads |
 | `filter[author]` | Posts by these members; decisions they decided |
 | `filter[intent]` | Posts with these intents |
-| `filter[status]` | Threads with these statuses; decisions with these statuses |
+| `filter[thread_status]` | Threads with these statuses |
+| `filter[decision_status]` | Decisions with these statuses |
 | `filter[after]`, `filter[before]` | Created in this range |
 
 The spec's `q`, `types`, `mode`, `after` and `before` become filters,
@@ -120,8 +121,10 @@ in its resource `meta`:
   best, with no ranges. In hybrid search, a result found both ways gets
   the keyword highlight, and `meta.matched` lists `keyword`, `semantic`
   or both.
-- **Every result's thread** is included by default, because a post or
-  decision without its thread has no context. `include` can add authors.
+- **Every result's thread** is always included, because a post or
+  decision without its thread has no context. It is the one documented
+  exception to `include` being opt-in (RFC 0002). `include` can add
+  authors.
 
 Search needs `threads:read`, the same as reading what it finds.
 

@@ -3,6 +3,7 @@
 - **Status:** Accepted
 - **Created:** 2026-10-09
 - **Depends on:** RFC 0002, RFC 0003, ADR 0002, ADR 0012, ADR 0025, ADR 0036, ADR 0043
+- **Amended by:** API contract review, 2026-10-09
 
 ## Summary
 
@@ -185,7 +186,8 @@ A webhook subscription is a `subscriptions` resource:
   or admin starts `pending`, sends nothing, and gives every owner and
   admin a `subscription_pending` inbox item. An owner or admin approves
   it with a `PATCH` of `status` to `active`, as action
-  `subscription.approve`, or deletes it with an optional `meta.note`;
+  `subscription.approve`, or deletes it, optionally with a `meta.note`
+  in the body of the `DELETE` saying why;
   either way the creator gets a `subscription_reviewed` inbox item. The
   workspace's `subscription_approval` setting, on by default, can be
   turned off by an owner, after which members' subscriptions are active
@@ -210,20 +212,27 @@ A webhook subscription is a `subscriptions` resource:
   not followed.
 - **The signing secret** is returned once, in the create response's
   `meta.secret`, as a Standard Webhooks `whsec_` secret. A new one is
-  created with `POST /v1/subscriptions/{subscription}/secrets`, shown once;
-  for 24 hours deliveries are signed with both.
+  created with `POST /v1/subscriptions/{subscription}/secrets`, which
+  answers `200` with the subscription and the new secret in
+  `meta.secret`, shown once; for 24 hours deliveries are signed with
+  both.
 - **`status`** is `pending`, `active` or `disabled`. A `PATCH` of
-  `status` to `active` re-enables a disabled subscription, as action
-  `subscription.enable`; `disabled` disables it by hand. Owners and
+  `status` to `active` is one of two actions, decided by the status it
+  moves from: from `pending` it is `subscription.approve`, from
+  `disabled` it is `subscription.enable`. `disabled` disables it by
+  hand, as `subscription.disable`. Owners and
   admins can see, disable and delete every subscription in the
   workspace; members see and manage their own.
 
 ### Delivery
 
 Each attempt to send an event to a subscription is recorded as a
-`webhook_deliveries` resource (`dlv_`), with the event, status, HTTP
-status, duration, the first kilobyte of the response body and when the
-next attempt is due.
+`webhook_deliveries` resource (`dlv_`), with `subscription` and `event`
+relationships and the attributes `status`, `test` (whether it sent a
+`subscription.test` event), `http_status`, `duration_ms`,
+`response_body` (the first kilobyte), `next_attempt_at` and
+`created_at`. The response fields are `null` until an attempt has been
+made.
 
 - **Signing** follows Standard Webhooks: `webhook-id` (the event `id`,
   the same on every retry), `webhook-timestamp`, and `webhook-signature`,
@@ -333,7 +342,7 @@ next event, whatever the client does (below).
 A stream ticket is created with `POST /v1/stream-tickets`, a
 `stream_tickets` resource (`stk_`) whose `token` attribute is a hub
 subscriber token listing the caller's topics, and whose `stream_url`
-carries it. A ticket only opens the stream, must be used within 60
+carries it as the `ticket` query parameter. A ticket only opens the stream, must be used within 60
 seconds, and is recorded in the audit log. An open connection is not cut
 when the 60 seconds pass.
 
@@ -387,11 +396,13 @@ notification only for `inbox.item_delivered`.
 | `subscription.update`, `subscription.enable`, `subscription.disable`, `subscription.delete`, `subscription.rotate_secret` | `webhooks:write` | The creator, owner, admin |
 | `subscription.approve` | `webhooks:write` | Owner, admin |
 | `webhook_delivery.replay`, `webhook_delivery.test` | `webhooks:write` | The creator, owner, admin |
-| `stream.ticket` | Any scope | Any member |
+| `stream.ticket` | Any valid token; no particular scope | Any member |
 
 Reading subscriptions and deliveries needs `webhooks:write`, since they
-show URLs and response bodies; members read only their own. Reading events needs the scope for each
-event's resource family.
+show URLs and response bodies; members read only their own. Reading
+events needs no single scope: `GET /v1/events` accepts any valid token
+and returns only the events whose resource family the token's scopes
+can read.
 
 ### Endpoints
 

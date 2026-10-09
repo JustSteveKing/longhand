@@ -3,7 +3,7 @@
 - **Status:** Accepted
 - **Created:** 2026-10-09
 - **Depends on:** RFC 0002, RFC 0003, RFC 0004, RFC 0006, ADR 0012, ADR 0022, ADR 0024
-- **Amended by:** RFC 0008
+- **Amended by:** RFC 0008, API contract review, 2026-10-09
 
 ## Summary
 
@@ -166,6 +166,8 @@ Citations are a relationship, so they can be included
 own ID for feedback to point at. `section` is one of the brief's
 `sections`, and `position` orders items inside it. An item's `text` is
 plain text, up to 500 characters: links belong in citations, not prose.
+It is `null` to anyone who may read the item but not see every one of
+its citations, such as a generator's owner following a flag (below).
 
 **Status** moves from `queued` to `generating` when the generator starts,
 then to `ready` or `failed`. A brief that is not `ready` within 10 minutes
@@ -304,6 +306,10 @@ resource:
 - The generator can list feedback on the briefs it wrote, with
   `GET /v1/brief-feedback?filter[generator]=me`, under the same rule for
   item text.
+- One piece of feedback is read at `GET /v1/brief-feedback/{feedback}`,
+  by whoever gave it, by the brief's generator, and by whoever answers
+  for the generator, under the same rule for item text. To anyone else it
+  is `404`.
 
 ### Rolling up a thread
 
@@ -363,7 +369,7 @@ Reading a brief and its items needs `briefs:read`.
 | `GET` | `/v1/briefs/{brief}/sources` | The source bundle, for the generator while generating |
 | `POST` | `/v1/operations` | Submit a generated brief |
 | `GET` / `POST` | `/v1/brief-feedback` | List or give feedback |
-| `PATCH` / `DELETE` | `/v1/brief-feedback/{feedback}` | Change or remove feedback |
+| `GET` / `PATCH` / `DELETE` | `/v1/brief-feedback/{feedback}` | Read, change or remove feedback |
 
 `GET /v1/briefs` lists the caller's own briefs, and with
 `filter[thread]` the roll-ups of a thread they can see. It also filters by

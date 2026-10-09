@@ -3,7 +3,7 @@
 - **Status:** Accepted
 - **Created:** 2026-10-09
 - **Depends on:** RFC 0003, RFC 0004, RFC 0005, ADR 0011, ADR 0022
-- **Amended by:** RFC 0010
+- **Amended by:** RFC 0010, API contract review, 2026-10-09
 
 ## Summary
 
@@ -128,14 +128,20 @@ availability, including its principal's.
 **What others see.** To anyone else, availability has `meta.access` set
 to `"limited"` and only `timezone`, `response_expectation`, `in_window`,
 `next_window_starts_at`, `lands_at` and the current or next away period.
-Exact hours, focus blocks, batches and digest settings stay private.
+Exact hours, focus blocks, batches, digest and email settings, and
+`incidents_interrupt` stay private: they are left out of the limited
+view's attributes, not set to `null`, so the two views are told apart by
+`meta.access` and by which attributes are present.
 This is the pattern ADR 0025 set for private spaces: one resource type,
 with what the caller may see.
 
 **Agents** have no availability of their own. They are always in a
 window, have no focus blocks, batches or digest, and everything reaches
-them immediately. Their availability resource reports exactly that, and
-cannot be changed.
+them immediately. Their availability resource reports exactly that:
+empty `working_hours`, `focus_blocks` and `today_batches`, a `null`
+`digest`, `in_window` always `true`, and `lands_at` of now for every
+tier. It cannot be changed: a `PATCH` of an agent's availability is
+`403` `insufficient-scope`, and so is an agent adding an away period.
 
 ### Away periods
 
@@ -159,7 +165,9 @@ member to delegate to:
 ```
 
 - Dates are local to the member and inclusive. Away periods cannot
-  overlap.
+  overlap: creating or changing one so that it overlaps another of the
+  member's is `409` `resource-conflict`. Invalid dates, such as an end
+  before the start, are `422` `validation-failed`.
 - The member creates, changes and deletes their own, with
   `availability:write`, as action `availability.update`.
 - While a member is away, everything to them is held until their first
@@ -321,9 +329,14 @@ thread, decision, brief, check-in run or subscription.
 - **Items close themselves** when what they are about is settled: a
   request accepted, declined, completed, cancelled or reassigned away; a
   question marked answered; a draft published or discarded; a thread
-  resolved or archived; access to the thread lost. `done_cause` says
-  which, and `inbox.item_done` carries it. A member closing an item by
-  hand has `done_cause: "member"`.
+  resolved or archived; access to the thread lost; a check-in run closed
+  (RFC 0008). `done_cause` says which, and `inbox.item_done` carries it.
+  Its values are `member` (closed by hand), `request_accepted`,
+  `request_declined`, `request_completed`, `request_cancelled`,
+  `request_reassigned`, `question_answered`, `draft_published`,
+  `draft_discarded`, `thread_resolved`, `thread_archived`,
+  `access_lost` and `run_closed`, and it is `null` while the item is
+  open or snoozed.
 
 **Reading the inbox.** `GET /v1/inbox-items` returns the caller's
 delivered items, or their principal's for an agent acting on someone's
@@ -445,13 +458,13 @@ Reading another member's limited availability and away periods needs
 | --- | --- | --- |
 | `GET` | `/v1/members/{member}/availability` | A member's availability, limited unless it is the caller's |
 | `GET` / `PATCH` | `/v1/availabilities/{availability}` | Read or change availability |
-| `GET` | `/v1/members/{member}/away-periods` | A member's away periods |
+| `GET` | `/v1/members/{member}/away-periods` | A member's current and upcoming away periods, soonest first |
 | `POST` | `/v1/away-periods` | Add an away period |
 | `GET` / `PATCH` / `DELETE` | `/v1/away-periods/{away_period}` | Read, change or remove one |
 | `GET` | `/v1/inbox-items` | The caller's inbox |
 | `GET` / `PATCH` | `/v1/inbox-items/{item}` | Read, mark done, snooze, reopen |
 | `POST` | `/v1/operations` | Bulk inbox changes |
-| `GET` | `/v1/digests` | The caller's digests |
+| `GET` | `/v1/digests` | The caller's digests, newest first |
 | `GET` | `/v1/digests/{digest}` | One digest |
 
 ### Errors and identifiers

@@ -3,7 +3,8 @@
 - **Status:** Accepted
 - **Created:** 2026-10-08
 - **Depends on:** RFC 0001, RFC 0002, ADR 0003, ADR 0013
-- **Amended by:** RFC 0007, RFC 0009, RFC 0010, RFC 0011, RFC 0012
+- **Amended by:** RFC 0007, RFC 0009, RFC 0010, RFC 0011, RFC 0012,
+  API contract review, 2026-10-09
 
 ## Summary
 
@@ -98,11 +99,37 @@ can be changed. A workspace starts with one space, `General`, of kind
 role the invitation grants and, for a guest, the spaces they are added to.
 
 - An invitation is valid for 7 days, and can be revoked or resent until
-  it is accepted.
+  it is accepted. Resending it restarts the 7 days.
 - Inviting an address that is already a member, or that has a pending
   invitation, is `409` `resource-conflict`.
 - Admins can invite as `admin`, `member` or `guest`. Only owners can
   invite as `owner`.
+
+An invitation is an `invitations` resource:
+
+```json
+{
+  "type": "invitations",
+  "id": "inv_01JAD8...",
+  "attributes": {
+    "email": "priya@example.com",
+    "role": "member",
+    "status": "pending",
+    "expires_at": "2026-10-16T09:00:00Z",
+    "created_at": "2026-10-09T09:00:00Z"
+  },
+  "relationships": {
+    "invited_by": { "data": { "type": "members", "id": "mem_01JA7Q..." } },
+    "spaces": { "data": [] }
+  }
+}
+```
+
+`status` is `pending`, `accepted`, `revoked` or `expired`. Resending is a
+`PATCH` of a pending invitation, as action `invitation.resend`, which sends
+the email again and moves `expires_at` to 7 days from then; revoking is a
+`DELETE`, as action `invitation.revoke`. Either is `409`
+`invalid-transition` once the invitation is no longer pending.
 
 **Joining.** The invitation link opens the web app. A person who is
 signed in accepts with the account they are using, whether or not its
@@ -207,8 +234,9 @@ The rules:
 - **Every agent has a human owner,** who is accountable for everything it
   does. A member creates agents they own; an admin can create an agent for
   any human member, and transfer an agent between owners.
-- **Agents are capped per owner.** The workspace sets how many agents one
-  member may own, 5 by default, and an owner or admin can change it.
+- **Agents are capped per owner.** The workspace's
+  `max_agents_per_member` sets how many agents one member may own, 5 by
+  default, and an owner or admin can change it.
   A person's MCP assistants have an allowance of their own (RFC 0011).
   Creating or transferring an agent to a member already at the cap is
   `409` `agent-limit-reached`. Lowering the cap leaves existing agents
@@ -239,10 +267,13 @@ The rules:
   agent, with `agent.suspended`, until an admin transfers it to another
   owner or deactivates it.
 
-An agent is created with `POST /v1/members` and `"kind": "agent"`. Humans
-are never created through the API; they join by invitation. Each agent has
-OAuth client credentials (below), issued when it is created and shown
-once.
+An agent is created with `POST /v1/members` and `"kind": "agent"`, as
+action `agent.create`. Humans are never created through the API; they
+join by invitation. Each agent has OAuth client credentials (below),
+issued when it is created and returned once, in the response's
+`meta.client_credentials` (`client_id` and `client_secret`).
+`POST /v1/members/{member}/credentials`, as action
+`agent.rotate_credentials`, issues a new secret the same way.
 
 ### Delegation
 
@@ -313,6 +344,13 @@ else, so an assignee reassigning a request back with `requests:write`
 alone is allowed; and `members:write`, `workspace:write`, `webhooks:write`
 and `audit:read` can never be granted to an agent.
 
+**What needs no scope.** `GET /v1/me` works with any valid token, since
+every caller may know who it is. A person editing their own profile
+(display name, handle, timezone), as action `member.update_profile`, and
+leaving the workspace, as `member.leave`, work with any human session or
+token, whatever its scopes: they are a person's own business, not
+administration. Agents cannot do either.
+
 ### Actions and how they are checked
 
 ADR 0013 makes state changes `PATCH`es of a resource's state, so the
@@ -323,7 +361,12 @@ on every surface, because every surface calls the same Action.
 
 Actions are named `resource.verb`: `thread.resolve`, `request.accept`,
 `request.assign`, `post.publish`, `decision.publish`, `member.invite` and
-so on. Each RFC lists its resources' actions, with their scope and who may
+so on. This RFC's own are `member.invite`, `member.join`,
+`member.update_profile`, `member.change_role`, `member.deactivate`,
+`member.reactivate`, `member.leave`, `agent.create`, `agent.configure`
+(scopes, approval rules, spaces, delegation), `agent.transfer`,
+`agent.suspend`, `agent.resume`, `agent.rotate_credentials`,
+`invitation.resend`, `invitation.revoke` and `workspace.update`. Each RFC lists its resources' actions, with their scope and who may
 take them. Those names are what `requires_approval_for` lists, what the
 audit log records, and what `insufficient-scope` and `approval-required`
 errors name in their `meta.action`.
@@ -370,8 +413,8 @@ member keeps its display name.
 
 The workspace is a singleton for the token: `GET /v1/workspace` and
 `PATCH /v1/workspace`, of type `workspaces`. It has a `name`, a `handle`,
-a default timezone for new spaces and check-ins, the agent cap per
-member, the `brief_generator` relationship and `brief_daily_limit`
+a `default_timezone` for new spaces and check-ins, the agent cap
+`max_agents_per_member`, the `brief_generator` relationship and `brief_daily_limit`
 (RFC 0007), `semantic_search` (RFC 0009), `subscription_approval` (RFC 0010),
 `max_assistants_per_member` (RFC 0011), and `created_at`.
 Changing it needs `workspace:write`, as action `workspace.update`, by an
@@ -390,6 +433,7 @@ Every action is recorded in the audit log as an `audit_events` resource:
   "id": "aud_01JAC9...",
   "attributes": {
     "action": "request.assign",
+    "outcome": "allowed",
     "surface": "mcp",
     "scope": "requests:assign",
     "occurred_at": "2026-10-08T11:42:00Z",
@@ -407,25 +451,27 @@ Every action is recorded in the audit log as an `audit_events` resource:
   an entry.
 - `surface` is `rest`, `mcp`, `web` or `system` (scheduled work such as
   staleness and overdue checks).
+- `outcome` is `allowed` or `refused`. Refused attempts are logged too,
+  with what was attempted and no `changes`, so an agent repeatedly trying
+  an action it may not take is visible.
 - `GET /v1/audit-events` lists entries newest first, filterable by
   `filter[actor]`, `filter[kind]` (the actor's), `filter[action]`,
-  `filter[surface]`, `filter[subject]` and a date range. It requires
+  `filter[outcome]`, `filter[surface]`, `filter[subject]`,
+  `filter[occurred_after]` and `filter[occurred_before]`. It requires
   `audit:read`.
-- Failed authorisation attempts are logged too, so an agent repeatedly
-  trying an action it may not take is visible.
 
 ### Endpoints
 
 | Method | Path | Action |
 | --- | --- | --- |
-| `GET` | `/v1/me` | The caller's member |
+| `GET` | `/v1/me` | The caller's member, with any valid token |
 | `GET` / `PATCH` | `/v1/workspace` | Read or update the workspace |
-| `GET` | `/v1/members` | List members, `filter[kind]=agent` |
+| `GET` | `/v1/members` | List members, `filter[kind]=agent`; by display name, or `sort` by handle or `created_at` |
 | `POST` | `/v1/members` | Create an agent |
 | `GET` | `/v1/members/{member}` | Read a member |
 | `PATCH` | `/v1/members/{member}` | Update profile, role, status, or an agent's scopes, spaces, rules, owner or delegation |
 | `POST` | `/v1/members/{member}/credentials` | Rotate an agent's client secret, shown once |
-| `GET` / `POST` | `/v1/invitations` | List or create invitations |
+| `GET` / `POST` | `/v1/invitations` | List invitations, newest first, or create one |
 | `PATCH` / `DELETE` | `/v1/invitations/{invitation}` | Resend or revoke |
 | `GET` | `/v1/audit-events` | The audit log |
 
@@ -495,7 +541,11 @@ From the spec's catalogue, `member.joined`, `member.updated`,
 - **Callers authenticate per surface:** sessions for the web app, OAuth
   2.1 authorisation code with PKCE for third-party apps, client
   credentials for agents.
-- **The audit log is append-only and records failed attempts.**
+- **The audit log is append-only and records refused attempts,** marked
+  by `outcome`.
+- **`/v1/me` needs no scope, and a person's own profile and leaving need
+  none beyond being human.**
+- **Resending an invitation restarts its 7 days.**
 - **v1 signs in with email and password or a passkey,** with optional
   two-factor authentication (amended by RFC 0012).
 - **Owners can let a verified email domain join without an invitation,**
