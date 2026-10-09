@@ -1,6 +1,6 @@
 # ADR 0069: Development runs in Sail, on the same PostgreSQL and a Mercure hub, with database queues in v1
 
-- **Status:** Accepted
+- **Status:** Superseded by ADR 0071
 - **Date:** 2026-10-09
 - **From:** RFC 0013
 

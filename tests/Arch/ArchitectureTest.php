@@ -34,3 +34,31 @@ arch('the shared kernel is final')
 arch('no debugging calls are left behind')
     ->expect(['dd', 'dump', 'ray', 'var_dump'])
     ->not->toBeUsed();
+
+/*
+ * Octane keeps the application in memory between requests (ADR 0071), so
+ * anything held in a static property leaks from one request into the
+ * next. State belongs in scoped container bindings, which Octane resets
+ * on every request.
+ */
+it('keeps no state in static properties in the domain', function (): void {
+    $offenders = [];
+
+    foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator(dirname(__DIR__, 2).'/src')) as $file) {
+        if ($file->getExtension() !== 'php') {
+            continue;
+        }
+
+        $class = 'Longhand\\'.str_replace(['/', '.php'], ['\\', ''], substr($file->getPathname(), strlen(dirname(__DIR__, 2).'/src/')));
+
+        if (! class_exists($class) && ! trait_exists($class)) {
+            continue;
+        }
+
+        foreach ((new ReflectionClass($class))->getProperties(ReflectionProperty::IS_STATIC) as $property) {
+            $offenders[] = "{$class}::\${$property->getName()}";
+        }
+    }
+
+    expect($offenders)->toBe([]);
+});

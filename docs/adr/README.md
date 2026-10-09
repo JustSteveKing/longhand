@@ -72,5 +72,6 @@ Every ADR, in order, with its status. See [the process](../README.md).
 | [0066](0066-visibility-is-one-query-with-embargoes.md) | Visibility is one query owned by Conversations, and other contexts' rules reach it as embargoes | Accepted |
 | [0067](0067-search-owns-its-projections.md) | Search owns its projections, kept in step in the same transaction as each change | Accepted |
 | [0068](0068-prefixed-ulids-are-the-primary-keys.md) | Prefixed ULIDs are the primary keys | Accepted |
-| [0069](0069-development-runs-in-sail.md) | Development runs in Sail, on the same PostgreSQL and a Mercure hub, with database queues in v1 | Accepted |
+| [0069](0069-development-runs-in-sail.md) | Development runs in Sail, on the same PostgreSQL and a Mercure hub, with database queues in v1 | Superseded by ADR 0071 |
 | [0070](0070-models-go-through-the-laravel-ai-sdk.md) | Briefs and embeddings go through the Laravel AI SDK, with Anthropic for briefs and Voyage AI for embeddings | Accepted |
+| [0071](0071-octane-on-frankenphp-with-its-built-in-hub.md) | The application runs on Octane with FrankenPHP, whose built-in Mercure hub serves the stream, in development as in production | Accepted |

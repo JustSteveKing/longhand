@@ -17,6 +17,7 @@ services:
             XDEBUG_MODE: '${SAIL_XDEBUG_MODE:-off}'
             XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
             IGNITION_LOCAL_SITES_PATH: '${PWD}'
+            SUPERVISOR_PHP_COMMAND: '/usr/bin/php -d variables_order=EGPCS /var/www/html/artisan octane:start --server=frankenphp --host=0.0.0.0 --admin-port=2019 --port=80 --watch'
         volumes:
             - '.:/var/www/html'
         networks:
@@ -24,7 +25,6 @@ services:
         depends_on:
             - pgsql
             - mailpit
-            - mercure
     pgsql:
         image: 'pgvector/pgvector:0.8.7-pg18'
         ports:
@@ -57,27 +57,9 @@ services:
             - '${FORWARD_MAILPIT_DASHBOARD_PORT:-8025}:8025'
         networks:
             - sail
-    mercure:
-        image: 'dunglas/mercure:v1.0.4'
-        ports:
-            - '${FORWARD_MERCURE_PORT:-8080}:80'
-        environment:
-            SERVER_NAME: ':80'
-            MERCURE_PUBLISHER_JWT_KEY: '${MERCURE_JWT_SECRET}'
-            MERCURE_SUBSCRIBER_JWT_KEY: '${MERCURE_JWT_SECRET}'
-            MERCURE_TRUSTED_ISSUERS: '${APP_URL}'
-            MERCURE_EXTRA_DIRECTIVES: |
-                cors_origins ${APP_URL}
-                public_urls http://localhost:${FORWARD_MERCURE_PORT:-8080} http://mercure
-        volumes:
-            - 'sail-mercure:/data'
-        networks:
-            - sail
 networks:
     sail:
         driver: bridge
 volumes:
     sail-pgsql:
-        driver: local
-    sail-mercure:
         driver: local
