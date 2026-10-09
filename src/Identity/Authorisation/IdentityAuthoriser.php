@@ -17,8 +17,8 @@ use Longhand\Shared\Actors\Surface;
  *
  * Who the caller is, whether they are active, the scope, and the rules
  * for agents. What depends on the thing being acted on, such as being a
- * thread's owner, is the Action's own guard. Agents' approval rules join
- * this check when agents have them.
+ * thread's owner, is the Action's own guard. An agent's approval rules
+ * send an action down its draft path.
  */
 final readonly class IdentityAuthoriser implements Authoriser
 {
@@ -77,8 +77,14 @@ final readonly class IdentityAuthoriser implements Authoriser
             return Authorisation::refuse('This agent has no active owner.', 'unauthorized');
         }
 
-        return RoleScopes::allows($owner->role, $scope)
-            ? Authorisation::allow()
-            : Authorisation::refuse("{$action->name} is beyond what this agent's owner may do.");
+        if (! RoleScopes::allows($owner->role, $scope)) {
+            return Authorisation::refuse("{$action->name} is beyond what this agent's owner may do.");
+        }
+
+        // Approval rules list actions, not scopes (ADR 0018): the Action takes
+        // its draft path and a person approves.
+        return $action->approvable && in_array($action->name, $agent->requires_approval_for, true)
+            ? Authorisation::approvalRequired()
+            : Authorisation::allow();
     }
 }

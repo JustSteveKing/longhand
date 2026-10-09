@@ -32,6 +32,13 @@ use Longhand\Shared\Identifiers\HasPrefixedUlid;
  * @property string $timezone
  * @property string|null $owner_id
  * @property string|null $acts_on_behalf_of_id
+ * @property string|null $description
+ * @property list<string> $scopes
+ * @property list<string> $requires_approval_for
+ * @property list<string> $space_ids
+ * @property array{provider: string, name: string}|null $model
+ * @property bool $assistant
+ * @property bool $spaces_follow_principal
  * @property Carbon $created_at
  * @property Carbon $updated_at
  */
@@ -57,6 +64,14 @@ final class Member extends Model
         return $this->belongsTo(Workspace::class);
     }
 
+    /**
+     * @return BelongsTo<Member, $this>
+     */
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(Member::class, 'owner_id');
+    }
+
     public function isHuman(): bool
     {
         return $this->kind === MemberKind::Human;
@@ -73,6 +88,12 @@ final class Member extends Model
             'kind' => MemberKind::class,
             'role' => Role::class,
             'status' => MemberStatus::class,
+            'scopes' => 'array',
+            'requires_approval_for' => 'array',
+            'space_ids' => 'array',
+            'model' => 'array',
+            'assistant' => 'boolean',
+            'spaces_follow_principal' => 'boolean',
         ];
     }
 }

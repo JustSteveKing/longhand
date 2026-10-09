@@ -53,8 +53,10 @@ final class RoleScopes
     {
         return match ($role) {
             Role::Owner, Role::Admin => [...self::READ, ...self::WORK, 'spaces:write', ...self::HUMAN_ONLY],
-            // Members create spaces and webhook subscriptions of their own (RFC 0004, RFC 0010).
-            Role::Member => [...self::READ, ...self::WORK, 'spaces:write', 'webhooks:write'],
+            // Members create spaces, webhook subscriptions and agents of their own (RFC 0003,
+            // RFC 0004, RFC 0010). members:write lets them manage their own agents; the
+            // guards on inviting, roles and deactivation keep the rest to owners and admins.
+            Role::Member => [...self::READ, ...self::WORK, 'spaces:write', 'webhooks:write', 'members:write'],
             // Guests work inside the spaces they were added to; they create no spaces and wire up nothing.
             Role::Guest => [...self::READ, ...self::WORK],
         };
