@@ -59,14 +59,16 @@ services:
             - sail
     mercure:
         image: 'dunglas/mercure:v1.0.4'
-        command: caddy run --config /etc/caddy/dev.Caddyfile
         ports:
             - '${FORWARD_MERCURE_PORT:-8080}:80'
         environment:
             SERVER_NAME: ':80'
             MERCURE_PUBLISHER_JWT_KEY: '${MERCURE_JWT_SECRET}'
             MERCURE_SUBSCRIBER_JWT_KEY: '${MERCURE_JWT_SECRET}'
-            MERCURE_EXTRA_DIRECTIVES: 'cors_origins ${APP_URL}'
+            MERCURE_TRUSTED_ISSUERS: '${APP_URL}'
+            MERCURE_EXTRA_DIRECTIVES: |
+                cors_origins ${APP_URL}
+                public_urls http://localhost:${FORWARD_MERCURE_PORT:-8080} http://mercure
         volumes:
             - 'sail-mercure:/data'
         networks:
